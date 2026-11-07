@@ -68,9 +68,103 @@ fn validate(config: &Value) -> Value {
 }
 
 #[test]
-fn the_abi_and_the_step_list_are_what_the_skeleton_promises() {
+fn the_abi_and_the_step_list_are_what_the_plugin_promises() {
     assert_eq!(bddkit_abi_version(), 4);
-    assert_eq!(call(bddkit_list_steps()), json!([]));
+    let steps = call(bddkit_list_steps());
+    let steps = steps.as_array().expect("an array");
+    assert_eq!(steps.len(), 14);
+    let mut expressions = Vec::new();
+    for step in steps {
+        assert_eq!(step["group"], "db");
+        // A step that declares no effect is unknown to `doctor`.
+        assert!(step["sets_vars"].is_array(), "{step}");
+        assert!(step["description"].as_str().is_some_and(|d| !d.is_empty()));
+        assert!(step.get("pattern").is_none(), "{step}");
+        expressions.push(step["expression"].as_str().expect("expression"));
+    }
+    expressions.sort_unstable();
+    expressions.dedup();
+    assert_eq!(expressions.len(), 14, "one expression per step");
+    let assertions: Vec<_> = steps.iter().filter(|s| s["kind"] == "assertion").collect();
+    assert_eq!(assertions.len(), 4);
+    assert!(assertions.iter().all(|s| {
+        s["expression"]
+            .as_str()
+            .is_some_and(|e| e.contains("should"))
+    }));
+}
+
+/// `bddkit_validate_step` for the step whose expression starts with `prefix`.
+fn validate_step(prefix: &str, args: &[&str]) -> Value {
+    let steps = call(bddkit_list_steps());
+    let index = steps
+        .as_array()
+        .expect("an array")
+        .iter()
+        .position(|s| {
+            s["expression"]
+                .as_str()
+                .is_some_and(|e| e.starts_with(prefix))
+        })
+        .expect("a step with this expression");
+    let request = cstr(&json!({
+        "args": args, "docstring": null, "table": null, "source_dir": "/x"
+    }));
+    call(bddkit_validate_step(
+        u32::try_from(index).expect("small"),
+        request.as_ptr(),
+    ))
+}
+
+#[test]
+fn validate_step_refuses_what_fails_at_the_step_for_sure() {
+    let insert = r#"I have "{table}" with"#;
+    for (prefix, args, why) in [
+        (insert, ["t", "no colon here"], "a pair without a colon"),
+        (
+            insert,
+            ["t", "slug~: x"],
+            "an operator where a value is written",
+        ),
+        (
+            r#"I delete "{table}" where"#,
+            ["t", "price>=: 3"],
+            "an unknown operator",
+        ),
+    ] {
+        let v = validate_step(prefix, &args);
+        assert_eq!(v["ok"], false, "{why}: {v}");
+    }
+    let v = validate_step("I call procedure", &["p", "a:1,oops"]);
+    assert_eq!(v["ok"], false, "{v}");
+}
+
+#[test]
+fn validate_step_accepts_a_slot_anywhere_and_a_correct_literal() {
+    let insert = r#"I have "{table}" with"#;
+    assert_eq!(validate_step(insert, &["t", "slug: ok, n: 2"])["ok"], true);
+    // A slot may fill in anything, so the argument is not read at all.
+    assert_eq!(validate_step(insert, &["t", "<<pairs>>"])["ok"], true);
+    assert_eq!(validate_step(insert, &["t", "slug~: <<x>>"])["ok"], true);
+    // An operator is right in a condition.
+    let delete = r#"I delete "{table}" where"#;
+    for condition in ["a!: 1", "a~: x%", "a!~: y", "a: <<null>>"] {
+        assert_eq!(
+            validate_step(delete, &["t", condition])["ok"],
+            true,
+            "{condition}"
+        );
+    }
+    // The column of an extract takes no operator.
+    let extract = "I extract";
+    assert_eq!(
+        validate_step(extract, &["id", "t", "a: 1", "v"])["ok"],
+        true
+    );
+    assert_eq!(
+        validate_step(extract, &["id~", "t", "a: 1", "v"])["ok"],
+        false
+    );
 }
 
 #[test]
