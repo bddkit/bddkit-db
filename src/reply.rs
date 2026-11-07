@@ -1,7 +1,11 @@
 //! Every reply the plugin sends is built here, so the shape the host parses
 //! has one author.
 
-use serde_json::json;
+use std::collections::BTreeMap;
+
+use serde_json::{Value, json};
+
+use crate::error::StepError;
 
 /// The envelope shared by validate / probe / init / drop.
 pub fn ok() -> String {
@@ -30,6 +34,26 @@ pub fn handle(handle: u64) -> String {
 /// Retrying cannot help.
 pub fn fatal(error: &str) -> String {
     json!({"status": "fatal", "error": error}).to_string()
+}
+
+/// The step passed: its variables, its debug lines, its evidence.
+pub fn passed(vars: &BTreeMap<String, String>, output: &[Value], diagnostics: &[Value]) -> String {
+    json!({"status": "passed", "vars": vars, "output": output, "diagnostics": diagnostics})
+        .to_string()
+}
+
+/// The step did not pass: `not_yet` for an assertion that may hold later,
+/// `fatal` otherwise, with the failure class the error was born with. No
+/// variables travel on a failure.
+pub fn failed(not_yet: bool, error: &StepError, output: &[Value], diagnostics: &[Value]) -> String {
+    json!({
+        "status": if not_yet { "not_yet" } else { "fatal" },
+        "error": error.message,
+        "class": error.class.as_str(),
+        "output": output,
+        "diagnostics": diagnostics,
+    })
+    .to_string()
 }
 
 #[cfg(test)]
