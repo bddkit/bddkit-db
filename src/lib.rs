@@ -5,8 +5,10 @@
 pub mod config;
 pub mod db;
 pub mod engine;
+pub mod error;
 mod reply;
 mod runtime;
+pub mod sql;
 
 use std::collections::{BTreeMap, HashMap};
 use std::ffi::{CStr, CString, c_char};
