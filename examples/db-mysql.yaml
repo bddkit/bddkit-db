@@ -1,0 +1,20 @@
+paths: [examples/db-features-mysql]
+
+default_db: default
+
+resources:
+  # Copied from examples/db.yaml, the Postgres example? Two things changed, and
+  # both are the same fact: on MySQL and MariaDB a schema IS a database.
+  #
+  #   * no `search_path` — there is no session-level one, and setting it is
+  #     refused at startup rather than silently ignored. The database is named
+  #     in the DSN instead (or a step qualifies a table as "database.table").
+  #   * the second connection is a second DSN, not a second schema on the
+  #     first one.
+  #
+  # Port 3307 is MySQL. MariaDB is the very same config on 3308.
+  db:
+    default:
+      dsn: mysql://root:root@127.0.0.1:3307/apibdd_demo
+    reporting:
+      dsn: mysql://root:root@127.0.0.1:3307/apibdd_demo_reporting

@@ -1,0 +1,20 @@
+# MariaDB is not "MySQL on another port" — it is everything MySQL does, plus
+# two things bddkit uses: sequences, and RETURNING.
+#
+# So this config runs both feature directories:
+#   * examples/db-features-mysql   — the engine-neutral file, unchanged
+#   * examples/db-features-mariadb — only what MariaDB adds over MySQL
+#
+# Apart from the port, the connections below are identical to
+# examples/db-mysql.yaml: still no `search_path` (a schema is a database here
+# too), still a second DSN for the second database.
+paths: [examples/db-features-mysql, examples/db-features-mariadb]
+
+default_db: default
+
+resources:
+  db:
+    default:
+      dsn: mysql://root:root@127.0.0.1:3308/apibdd_demo
+    reporting:
+      dsn: mysql://root:root@127.0.0.1:3308/apibdd_demo_reporting
