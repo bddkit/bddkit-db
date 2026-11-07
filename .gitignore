@@ -1,0 +1,4 @@
+/target
+# design artefacts stay local, never published with the plugin
+/docs/superpowers/
+/.idea/

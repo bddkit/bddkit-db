@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  # The host the plugin is tested against: a candidate, built with the feature
+  # that lets a plugin claim `db`. Raise it when a newer candidate is out.
+  HOST_TAG: v0.5.0-rc.1
+
+jobs:
+  test:
+    name: test & clippy
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: apibdd_it
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd "mysqladmin ping -proot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: apibdd_it
+        ports:
+          - 3308:3306
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v6
+      # Pinned on purpose: a floating stable's new clippy lint must never
+      # redden a PR that has nothing to do with it.
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: "1.97.1"
+          components: clippy, rustfmt
+          rustflags: ""
+      - run: cargo fmt --check
+      - name: File size budget
+        run: |
+          files=$(git ls-files '*.rs' '*.feature' '*.yaml' '*.yml' ':!.github/')
+          status=0
+          while IFS= read -r file; do
+            lines=$(wc -l < "$file")
+            if [ "$lines" -gt 1000 ]; then
+              echo "::error file=$file::$lines lines, the limit is 1000"
+              status=1
+            fi
+          done <<< "$files"
+          exit "$status"
+      - run: cargo clippy --locked --all-targets -- -D warnings
+
+      - name: Cache the host
+        id: host
+        uses: actions/cache@v4
+        with:
+          path: ~/bddkit-host
+          key: bddkit-host-${{ env.HOST_TAG }}-dev-unreserve
+      - name: Install the host
+        if: steps.host.outputs.cache-hit != 'true'
+        run: >-
+          cargo install --git https://github.com/bddkit/bddkit --tag "$HOST_TAG"
+          --locked --features dev-unreserve --root ~/bddkit-host bddkit
+
+      # The databases above are shared test fixtures, so the suites run
+      # single-threaded.
+      - name: Tests
+        env:
+          BDDKIT_TEST_DSN: postgres://postgres:postgres@127.0.0.1:5433/postgres
+          BDDKIT_TEST_MYSQL_DSN: mysql://root:root@127.0.0.1:3307/apibdd_it
+          BDDKIT_TEST_MARIADB_DSN: mysql://root:root@127.0.0.1:3308/apibdd_it
+        run: |
+          export BDDKIT_BIN="$HOME/bddkit-host/bin/bddkit"
+          cargo test --locked -- --test-threads=1
