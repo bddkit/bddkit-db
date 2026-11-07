@@ -6,6 +6,7 @@ use std::sync::Once;
 use sqlx::any::AnyConnectOptions;
 
 use crate::config::Connection;
+use crate::sql::platform::{MARIADB, MYSQL, PG, Platform};
 
 /// The family a DSN scheme selects. MySQL and MariaDB share the `mysql://`
 /// scheme, so telling them apart takes a query: see [`Engine`].
@@ -29,6 +30,15 @@ impl Engine {
             Self::Postgres => "postgres",
             Self::MySql => "mysql",
             Self::MariaDb => "mariadb",
+        }
+    }
+
+    /// The dialect this engine speaks.
+    pub fn platform(self) -> &'static dyn Platform {
+        match self {
+            Self::Postgres => &PG,
+            Self::MySql => &MYSQL,
+            Self::MariaDb => &MARIADB,
         }
     }
 
@@ -69,21 +79,12 @@ impl Family {
         }
     }
 
-    /// Statements to run right after every pooled connection opens.
+    /// Statements to run right after every pooled connection opens. The two
+    /// `mysql://` vendors share one answer, so the family's platform decides.
     pub fn session_setup(self, search_path: &[String]) -> Result<Vec<String>, String> {
-        if search_path.is_empty() {
-            return Ok(Vec::new());
-        }
         match self {
-            Self::Postgres => Ok(vec![format!(
-                "SET search_path TO {}",
-                search_path.join(", ")
-            )]),
-            Self::Mysql => Err(format!(
-                "{}: a schema is a database, there is no session-level search_path; \
-                 qualify each table reference as \"schema.table\" instead of setting search_path",
-                self.name()
-            )),
+            Self::Postgres => PG.session_setup(search_path),
+            Self::Mysql => MYSQL.session_setup(search_path),
         }
     }
 }
@@ -128,7 +129,8 @@ mod tests {
         ] {
             assert_eq!(Family::of(dsn), Ok(family), "{dsn}");
         }
-        assert!(Family::of("sqlite://x").is_err());
+        let unknown = Family::of("sqlite://x").expect_err("unknown scheme");
+        assert!(unknown.contains("sqlite"), "{unknown}");
         let leak = Family::of("user:secret@host/db").expect_err("no scheme");
         assert!(!leak.contains("secret"), "{leak}");
     }
@@ -146,9 +148,24 @@ mod tests {
 
     #[test]
     fn a_dsn_is_parsed_whole_not_only_by_its_scheme() {
-        assert!(check(&connection("postgres://u:p@127.0.0.1:5432/x", &[])).is_ok());
-        assert!(check(&connection("postgres://u:p@127.0.0.1:notaport/x", &[])).is_err());
-        assert!(check(&connection("mysql://u:p@127.0.0.1:3306/x", &["s"])).is_err());
+        // Port 1 is closed on any sane host: `check` must not connect.
+        assert_eq!(
+            check(&connection("postgres://u:p@127.0.0.1:1/x", &["app"])),
+            Ok(Family::Postgres)
+        );
+        let port = check(&connection("postgres://u:p@127.0.0.1:notaport/x", &[]))
+            .expect_err("malformed port");
+        assert!(port.contains("port"), "{port}");
+        let path = check(&connection("mysql://u:p@127.0.0.1:3306/x", &["s"]))
+            .expect_err("search_path on mysql");
+        assert!(path.contains("search_path"), "{path}");
+    }
+
+    #[test]
+    fn each_engine_speaks_its_own_dialect() {
+        for engine in [Engine::Postgres, Engine::MySql, Engine::MariaDb] {
+            assert_eq!(engine.platform().name(), engine.name());
+        }
     }
 
     #[test]
