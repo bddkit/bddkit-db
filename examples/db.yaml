@@ -1,0 +1,12 @@
+paths: [examples/db-features]
+
+default_db: default
+
+resources:
+  db:
+    default:
+      dsn: postgres://postgres:postgres@127.0.0.1:5433/postgres
+      search_path: [apibdd_demo]
+    reporting:
+      dsn: postgres://postgres:postgres@127.0.0.1:5433/postgres
+      search_path: [apibdd_demo_reporting]
