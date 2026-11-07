@@ -16,8 +16,14 @@ env:
 
 jobs:
   test:
-    name: test & clippy
+    # The suites in tests/db.rs and tests/db_host.rs run against one engine at
+    # a time; the other test binaries and the lints do not care which.
+    name: test & clippy (${{ matrix.engine }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [postgres, mysql, mariadb]
 
     services:
       postgres:
@@ -66,7 +72,9 @@ jobs:
           components: clippy, rustfmt
           rustflags: ""
       - run: cargo fmt --check
+        if: matrix.engine == 'postgres'
       - name: File size budget
+        if: matrix.engine == 'postgres'
         run: |
           files=$(git ls-files '*.rs' '*.feature' '*.yaml' '*.yml' ':!.github/')
           status=0
@@ -79,6 +87,7 @@ jobs:
           done <<< "$files"
           exit "$status"
       - run: cargo clippy --locked --all-targets -- -D warnings
+        if: matrix.engine == 'postgres'
 
       - name: Cache the host
         id: host
@@ -99,6 +108,28 @@ jobs:
           BDDKIT_TEST_DSN: postgres://postgres:postgres@127.0.0.1:5433/postgres
           BDDKIT_TEST_MYSQL_DSN: mysql://root:root@127.0.0.1:3307/apibdd_it
           BDDKIT_TEST_MARIADB_DSN: mysql://root:root@127.0.0.1:3308/apibdd_it
+          BDDKIT_TEST_ENGINE: ${{ matrix.engine }}
         run: |
           export BDDKIT_BIN="$HOME/bddkit-host/bin/bddkit"
           cargo test --locked -- --test-threads=1
+
+      # The examples are the demonstration surface: without this they rot.
+      # The service containers start before the checkout, so the init scripts
+      # are applied by hand, and each suite runs from the root as the README says.
+      - name: Examples
+        if: matrix.engine == 'postgres'
+        run: |
+          export BDDKIT_BIN="$HOME/bddkit-host/bin/bddkit"
+          psql -v ON_ERROR_STOP=1 postgres://postgres:postgres@127.0.0.1:5433/postgres -f examples/db/init.sql
+          mysql --protocol=TCP -h127.0.0.1 -P3307 -uroot -proot < examples/db/init-mysql.sql
+          mysql --protocol=TCP -h127.0.0.1 -P3308 -uroot -proot < examples/db/init-mysql.sql
+          mysql --protocol=TCP -h127.0.0.1 -P3308 -uroot -proot < examples/db/init-mariadb.sql
+          cargo build --locked
+          lock="$RUNNER_TEMP/lock"
+          mkdir -p "$lock"
+          printf 'plugin:\n  - name: db\n    path: %s/target/debug/libbddkit_db.so\n' "$PWD" > "$lock/plugins.yaml"
+          code=0
+          for suite in db db-mysql db-mariadb; do
+            "$BDDKIT_BIN" run --config "examples/$suite.yaml" --bddkit-dir "$lock" || code=1
+          done
+          exit "$code"
