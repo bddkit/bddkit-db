@@ -330,6 +330,11 @@ fn split_operator(raw: &str) -> Result<(&str, Op), String> {
     Ok((name, op))
 }
 
+/// A condition's column: an operator is allowed, an unknown one is not.
+pub fn condition_column(raw: &str) -> Result<(), String> {
+    split_operator(raw).map(|_| ())
+}
+
 /// An operator belongs to a condition. Anywhere a value is WRITTEN it is a
 /// typo, and letting it through would report a missing column `slug~` —
 /// sending the author to look at their schema instead of at their step.

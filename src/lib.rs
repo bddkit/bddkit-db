@@ -4,11 +4,14 @@
 
 pub mod config;
 pub mod db;
+mod dispatch;
 pub mod engine;
 pub mod error;
+mod ops;
 mod reply;
 mod runtime;
 pub mod sql;
+mod steps;
 
 use std::collections::{BTreeMap, HashMap};
 use std::ffi::{CStr, CString, c_char};
@@ -18,7 +21,16 @@ use std::sync::{Arc, LazyLock, Mutex, MutexGuard, PoisonError};
 
 use config::Connection;
 use db::Db;
+use serde::Deserialize;
 use serde_json::Value;
+use steps::Step;
+
+/// What `bddkit_validate_step` reads of its request.
+#[derive(Deserialize)]
+struct StepArgs {
+    #[serde(default)]
+    args: Vec<String>,
+}
 
 /// The plugin ABI this library is built for.
 const ABI: u32 = 4;
@@ -86,11 +98,26 @@ pub extern "C" fn bddkit_manifest() -> *mut c_char {
     guard("envelope", manifest_json)
 }
 
-/// The steps arrive with their own issue; the group still loads, validates
-/// and connects without them.
 #[unsafe(no_mangle)]
 pub extern "C" fn bddkit_list_steps() -> *mut c_char {
-    guard("envelope", || "[]".to_string())
+    guard("envelope", steps::list_json)
+}
+
+/// Before any connection exists: refuses only what would fail at the step.
+#[unsafe(no_mangle)]
+pub extern "C" fn bddkit_validate_step(index: u32, request: *const c_char) -> *mut c_char {
+    guard("envelope", move || {
+        let Some(step) = Step::from_index(index) else {
+            return reply::err("unknown step");
+        };
+        match serde_json::from_str::<StepArgs>(&input(request)) {
+            Ok(request) => match steps::validate(step, &request.args) {
+                Ok(()) => reply::ok(),
+                Err(error) => reply::err(error),
+            },
+            Err(error) => reply::err(error.to_string()),
+        }
+    })
 }
 
 /// # Safety
@@ -183,12 +210,23 @@ pub extern "C" fn bddkit_init_instance(request: *const c_char) -> *mut c_char {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn bddkit_dispatch(
-    _handle: u64,
-    _step_index: u32,
-    _request: *const c_char,
+    handle: u64,
+    step_index: u32,
+    request: *const c_char,
 ) -> *mut c_char {
-    guard("dispatch", || {
-        reply::fatal("the db plugin declares no steps yet")
+    guard("dispatch", move || {
+        let Some(step) = Step::from_index(step_index) else {
+            return reply::fatal("unknown step");
+        };
+        // Cloned out so the table is not locked while the step runs: workers
+        // dispatch on this one handle at the same time.
+        let Some(db) = databases().get(&handle).map(Arc::clone) else {
+            return reply::fatal("unknown handle");
+        };
+        match runtime::block_on(async { Ok(dispatch::run(&db, step, &input(request)).await) }) {
+            Ok(reply) => reply,
+            Err(error) => reply::fatal(&error),
+        }
     })
 }
 

@@ -20,9 +20,9 @@ pub struct ConnectError {
     pub message: String,
 }
 
-struct Pooled {
-    pool: AnyPool,
-    engine: Engine,
+pub(crate) struct Pooled {
+    pub(crate) pool: AnyPool,
+    pub(crate) engine: Engine,
 }
 
 /// Every connection of the run, and the schemas read from them so far.
@@ -146,7 +146,7 @@ impl Db {
     }
 
     /// The one place that knows "not declared" for a connection name.
-    fn connection(&self, name: &str) -> Result<&Pooled, StepError> {
+    pub(crate) fn connection(&self, name: &str) -> Result<&Pooled, StepError> {
         self.connections.get(name).ok_or_else(|| {
             StepError::input(format!(
                 "connection {name:?} is not declared in resources.db"
