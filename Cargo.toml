@@ -1,0 +1,49 @@
+# Its own workspace root on purpose: without this, a parent workspace builds
+# the plugin implicitly and `cargo clippy --all-targets` in the parent sees it.
+[workspace]
+
+[package]
+name = "bddkit-db"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+description = "Database steps for the bddkit acceptance-testing tool: Postgres, MySQL and MariaDB"
+license = "Apache-2.0"
+repository = "https://github.com/bddkit/bddkit-db"
+homepage = "https://github.com/bddkit/bddkit-db"
+readme = "README.md"
+keywords = ["bdd", "gherkin", "testing", "database", "bddkit"]
+categories = ["development-tools::testing"]
+exclude = ["/.github", "/.idea", "/docs"]
+
+[lib]
+# rlib beside the cdylib so `tests/` can call the exports in-process.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "any", "postgres", "mysql"] }
+tokio = { version = "1.53", features = ["rt-multi-thread"] }
+
+[dev-dependencies]
+tokio = { version = "1.53", features = ["macros", "rt-multi-thread"] }
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+todo = "warn"
+unimplemented = "warn"
+dbg_macro = "warn"
+clone_on_ref_ptr = "warn"
+undocumented_unsafe_blocks = "warn"
+multiple_unsafe_ops_per_block = "warn"
+# noise for this project
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+doc_markdown = "allow"
+format_push_string = "allow"
