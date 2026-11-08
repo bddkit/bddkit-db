@@ -12,7 +12,7 @@ env:
   CARGO_TERM_COLOR: always
   # The host the plugin is tested against: a candidate, built with the feature
   # that lets a plugin claim `db`. Raise it when a newer candidate is out.
-  HOST_TAG: v0.5.0-rc.1
+  HOST_TAG: v0.5.0-rc.2
 
 jobs:
   test:
