@@ -69,7 +69,7 @@ Feature: working with the database
     Then variable "second" should not be equal to "<<first>>"
 
   Scenario: switching to another resource connection
-    Given I use "reporting" connection
+    Given I use "reporting" db
     And I have "audit_log" with "message: demo audit entry"
     Then I should have "audit_log" with "message: demo audit entry"
 

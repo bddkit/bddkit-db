@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS apibdd_demo.invoices (
     CONSTRAINT fk_invoices_company FOREIGN KEY (company_id) REFERENCES apibdd_demo.companies (id)
 );
 
--- A second database for the `I use "reporting" connection` step.
+-- A second database for the `I use "reporting" db` step.
 CREATE DATABASE IF NOT EXISTS apibdd_demo_reporting;
 
 CREATE TABLE IF NOT EXISTS apibdd_demo_reporting.audit_log (
