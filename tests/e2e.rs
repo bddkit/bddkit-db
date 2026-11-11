@@ -1,5 +1,4 @@
-//! The real `bddkit` binary, built with `--features dev-unreserve` so that a
-//! plugin may claim `db`, and this crate's `cdylib`. `BDDKIT_BIN` names the
+//! The real `bddkit` binary and this crate's `cdylib`. `BDDKIT_BIN` names the
 //! host. Without it the tests skip, except under `CI`, where a missing host
 //! is a failure: a skipped suite must never look green there.
 
