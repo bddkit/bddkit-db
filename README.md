@@ -85,10 +85,10 @@ Known ceilings: `I extract` cannot tell SQL NULL from an empty string and reads 
 
 ## Develop
 
-The tests need a `bddkit` host built with `--features dev-unreserve` (a build that lets a plugin claim `db`) and the three databases.
+The tests need a `bddkit` host of `v0.5.0-rc.3` or later and the three databases.
 
 ```sh
-cargo install --git https://github.com/bddkit/bddkit --tag v0.5.0-rc.2 --locked --features dev-unreserve --root ~/bddkit-host bddkit
+cargo install --git https://github.com/bddkit/bddkit --tag v0.5.0-rc.3 --locked --root ~/bddkit-host bddkit
 BDDKIT_BIN=~/bddkit-host/bin/bddkit cargo test -- --test-threads=1
 ```
 

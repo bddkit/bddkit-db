@@ -10,9 +10,9 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
-  # The host the plugin is tested against: a candidate, built with the feature
-  # that lets a plugin claim `db`. Raise it when a newer candidate is out.
-  HOST_TAG: v0.5.0-rc.2
+  # The host the plugin is tested against: a candidate. Raise it when a newer
+  # candidate is out.
+  HOST_TAG: v0.5.0-rc.3
 
 jobs:
   test:
@@ -94,12 +94,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/bddkit-host
-          key: bddkit-host-${{ env.HOST_TAG }}-dev-unreserve
+          key: bddkit-host-${{ env.HOST_TAG }}
       - name: Install the host
         if: steps.host.outputs.cache-hit != 'true'
         run: >-
           cargo install --git https://github.com/bddkit/bddkit --tag "$HOST_TAG"
-          --locked --features dev-unreserve --root ~/bddkit-host bddkit
+          --locked --root ~/bddkit-host bddkit
 
       # The databases above are shared test fixtures, so the suites run
       # single-threaded.

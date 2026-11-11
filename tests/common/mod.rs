@@ -1,8 +1,7 @@
 //! What every end-to-end test binary shares: the host, the plugin built for
 //! it, and the lock directory that ties the two. `BDDKIT_BIN` names a `bddkit`
-//! built with `--features dev-unreserve`. Without it the tests skip, except
-//! under `CI`, where a missing host is a failure: a skipped suite must never
-//! look green there.
+//! host. Without it the tests skip, except under `CI`, where a missing host is
+//! a failure: a skipped suite must never look green there.
 
 #![allow(
     dead_code,
@@ -35,7 +34,7 @@ macro_rules! require_bddkit {
                 panic!("BDDKIT_BIN does not name a bddkit binary, and CI must not skip")
             }
             None => {
-                eprintln!("SKIP: set BDDKIT_BIN to a bddkit built with --features dev-unreserve");
+                eprintln!("SKIP: set BDDKIT_BIN to a bddkit binary");
                 return;
             }
         }
