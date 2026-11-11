@@ -4,7 +4,7 @@
 
 [package]
 name = "bddkit-db"
-version = "0.1.0"
+version = "0.1.0-rc.1"
 edition = "2024"
 rust-version = "1.97"
 description = "Database steps for the bddkit acceptance-testing tool: Postgres, MySQL and MariaDB"
