@@ -133,3 +133,95 @@ jobs:
             "$BDDKIT_BIN" run --config "examples/$suite.yaml" --bddkit-dir "$lock" || code=1
           done
           exit "$code"
+
+  # Release gate (epic bddkit/bddkit#183, phase 6): the core's DB example suites
+  # exactly as they were at the `pre-split` tag pass on the candidate host with
+  # this plugin installed. Nothing of the suites is edited, so the `api` resource
+  # they still declare needs the api plugin: it is installed the way a user
+  # would, from its pre-release. Raise API_TAG with the API candidate.
+  pre-split-gate:
+    name: pre-split DB suites
+    runs-on: ubuntu-latest
+    env:
+      API_TAG: 0.1.0-rc.1
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: apibdd_it
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd "mysqladmin ping -proot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: apibdd_it
+        ports:
+          - 3308:3306
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: "1.97.1"
+          rustflags: ""
+      - name: Check out the core at pre-split
+        uses: actions/checkout@v6
+        with:
+          repository: bddkit/bddkit
+          ref: pre-split
+          path: core
+
+      - name: Cache the host
+        id: host
+        uses: actions/cache@v4
+        with:
+          path: ~/bddkit-host
+          key: bddkit-host-${{ env.HOST_TAG }}
+      - name: Install the host
+        if: steps.host.outputs.cache-hit != 'true'
+        run: >-
+          cargo install --git https://github.com/bddkit/bddkit --tag "$HOST_TAG"
+          --locked --root ~/bddkit-host bddkit
+
+      - name: Run the suites
+        run: |
+          bddkit="$HOME/bddkit-host/bin/bddkit"
+          cargo build --locked
+          lock="$RUNNER_TEMP/lock"
+          mkdir -p "$lock"
+          "$bddkit" plugin install "bddkit/bddkit-api@$API_TAG" --bddkit-dir "$lock"
+          printf -- '- name: db\n  path: %s/target/debug/libbddkit_db.so\n' "$PWD" >> "$lock/plugins.yaml"
+          cd core
+          psql -v ON_ERROR_STOP=1 postgres://postgres:postgres@127.0.0.1:5433/postgres -f examples/db/init.sql
+          mysql --protocol=TCP -h127.0.0.1 -P3307 -uroot -proot < examples/db/init-mysql.sql
+          mysql --protocol=TCP -h127.0.0.1 -P3308 -uroot -proot < examples/db/init-mysql.sql
+          mysql --protocol=TCP -h127.0.0.1 -P3308 -uroot -proot < examples/db/init-mariadb.sql
+          code=0
+          for suite in db db-mysql db-mariadb; do
+            "$bddkit" run --config "examples/$suite.yaml" --bddkit-dir "$lock" || code=1
+          done
+          exit "$code"
