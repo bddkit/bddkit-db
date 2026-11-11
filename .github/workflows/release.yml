@@ -1,16 +1,12 @@
 name: Release
 
-# The `push` trigger is held back until the 0.1.0 release gates pass
-# (bddkit-db#11): Cargo.toml already says 0.1.0 and no tag exists, so release-plz
-# would tag and release 0.1.0 on the first push to main. Until then the candidates
-# are cut by hand and built through `rebuild_tag`. bddkit-db#11 restores
-# `push: branches: [main]` and drops the two `github.event_name == 'push'` gates,
-# which makes this file bddkit-exec's again.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       rebuild_tag:
-        description: Existing tag to rebuild (for example, v0.1.0-rc.1). Empty does nothing until push releases return (bddkit-db#11).
+        description: Existing tag to rebuild (for example, v0.1.0). Leave empty for a normal release.
         required: false
         default: ""
         type: string
@@ -25,7 +21,7 @@ env:
 jobs:
   release:
     name: publish, tag, and release
-    if: ${{ inputs.rebuild_tag == '' && github.event_name == 'push' }}
+    if: ${{ inputs.rebuild_tag == '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -54,7 +50,7 @@ jobs:
 
   release-pr:
     name: release PR
-    if: ${{ inputs.rebuild_tag == '' && github.event_name == 'push' }}
+    if: ${{ inputs.rebuild_tag == '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
