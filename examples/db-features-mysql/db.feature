@@ -65,7 +65,7 @@ Feature: working with the database on MySQL and MariaDB
     And I should not have "invoices" with "company_id: <<wipeCoId>>"
 
   Scenario: switching connection — which here means switching database
-    Given I use "reporting" connection
+    Given I use "reporting" db
     And I have "audit_log" with "message: demo audit entry"
     Then I should have "audit_log" with "message: demo audit entry"
 

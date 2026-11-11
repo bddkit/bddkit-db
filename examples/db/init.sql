@@ -37,7 +37,7 @@ LANGUAGE sql AS $$
     UPDATE apibdd_demo.companies SET balance = balance + p_delta WHERE id = p_company_id;
 $$;
 
--- A second schema/connection for the "I use ... connection" step.
+-- A second schema/connection for the "I use ... db" step.
 CREATE SCHEMA IF NOT EXISTS apibdd_demo_reporting;
 
 CREATE TABLE IF NOT EXISTS apibdd_demo_reporting.audit_log (
