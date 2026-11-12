@@ -3,7 +3,7 @@ Feature: working with the database on MySQL and MariaDB
 
   Every step below is engine-neutral: this one file passes unchanged against MySQL
   and against MariaDB — only the port in examples/db-mysql.yaml differs. The schema
-  is examples/db/init-mysql.sql, spun up via docker-compose.
+  is examples/db/init-mysql.sql, loaded as examples/README.md shows.
 
   What is missing compared with examples/db-features/db.feature is the point of the
   file: no sequences, no procedure or function calls, no search_path. See the

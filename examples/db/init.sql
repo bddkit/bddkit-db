@@ -1,6 +1,5 @@
--- Fixture schema for the bddkit DB example. Applied automatically on the first
--- container start (docker-entrypoint-initdb.d), or manually:
---   docker compose exec -T db psql -U postgres -f - < examples/db/init.sql
+-- Fixture schema for the bddkit DB example. Load it with psql, as
+-- examples/README.md shows.
 
 CREATE SCHEMA IF NOT EXISTS apibdd_demo;
 
@@ -29,7 +28,7 @@ RETURNS text AS $$
 $$ LANGUAGE sql;
 
 -- Procedure: returns nothing, effect only → the "I call procedure ... with" step.
--- bigint/numeric parameters: step arguments are bound as int8/f64 (see db/value.rs
+-- bigint/numeric parameters: step arguments are bound as int8/f64 (see src/sql/value.rs
 -- infer_arg), and int8 → int4 is not an implicit cast in Postgres — only int8 → int4
 -- via a matching bigint parameter resolves without a "does not exist" error.
 CREATE OR REPLACE PROCEDURE apibdd_demo.recalc_balance(p_company_id bigint, p_delta numeric)
