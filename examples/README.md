@@ -40,7 +40,7 @@ MariaDB is MySQL plus sequences and `RETURNING`, so this config runs two directo
 | `search_path` in `resources.db` | yes | **no** | **no** | A schema is a database there. The key is refused at startup; name the database in the DSN, or qualify a table as `database.table` |
 | `binary`/`varbinary` columns | n/a | **no** | **no** | `UUID_TO_BIN`'s byte order is recorded nowhere in `information_schema`, so the layer refuses rather than guess. Use `char(36)`, as `init-mysql.sql` does; a client-side UUIDv7 fills it. Every width is refused, since the layer binds and compares as text |
 | A key filled by a server `DEFAULT` that is not `AUTO_INCREMENT` | yes | **no** | yes | Reading the value back needs `RETURNING`. Give the value explicitly, or use `AUTO_INCREMENT` |
-| The text an `I extract` yields | each its own | each its own | each its own | Portable as a step, not as a value: `now()` is `2026-08-29 15:11:50.884052+00` on Postgres and `2026-08-29 15:11:50` on the others, a boolean is `true` or `1`. The examples extract only from `varchar` columns |
+| The text an `I extract` yields | each its own | each its own | each its own | Portable as a step, not as a value: `now()` is `2026-08-29 15:11:50.884052+00` on Postgres and `2026-08-29 15:11:50` on the others, a boolean is `true` or `1` |
 | `col~:` / `col!~:` | case-sensitive | **case-insensitive** | **case-insensitive** | The operator and the escaping are identical; MySQL and MariaDB match under the column's collation. The run prefix `<<run_id>>` is lowercase, so the cleanup pattern is unaffected |
 | `I call procedure` / `I call function` | yes | yes | yes | The steps are portable, the routine bodies are not. The Postgres routines are `LANGUAGE sql`, which is why they are absent from the others |
 

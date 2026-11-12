@@ -1,12 +1,10 @@
--- Fixture schema for the bddkit MySQL/MariaDB example. Applied automatically on
--- the first container start (docker-entrypoint-initdb.d), or manually:
---   docker compose exec -T mysql   mysql -uroot -proot < examples/db/init-mysql.sql
---   docker compose exec -T mariadb mysql -uroot -proot < examples/db/init-mysql.sql
+-- Fixture schema for the bddkit MySQL/MariaDB example. Load it with the mysql
+-- client, as examples/README.md shows.
 --
 -- One file serves both engines: MariaDB accepts this DDL unchanged.
 --
 -- It deliberately does not touch `apibdd_it`, the database the integration
--- tests own (created by MYSQL_DATABASE/MARIADB_DATABASE in docker-compose.yml,
+-- tests own (created by MYSQL_DATABASE/MARIADB_DATABASE of the CI services in ci.yml,
 -- with its tables managed by the test harness).
 --
 -- Here a schema IS a database, so the "second schema" of the Postgres fixture

@@ -1,15 +1,13 @@
 -- MariaDB-only additions to examples/db/init-mysql.sql, which both engines share.
 --
--- Kept as a separate file mounted only into the `mariadb` service rather than
--- guarded inside the shared one with MariaDB's executable comments
--- (`/*M!100300 CREATE SEQUENCE ... */`): a second mount is obvious to anyone
--- reading docker-compose.yml, whereas a version-gated comment reads as a
+-- Kept as a separate file, loaded only into MariaDB, rather than guarded inside
+-- the shared one with MariaDB's executable comments
+-- (`/*M!100300 CREATE SEQUENCE ... */`): a second file is obvious to anyone
+-- reading examples/README.md, whereas a version-gated comment reads as a
 -- comment right up until it does not. MySQL 8 has no CREATE SEQUENCE at all,
--- so an unguarded one in the shared file would fail its container's startup.
+-- so an unguarded one in the shared file would fail on MySQL.
 --
--- Ordering is explicit in the mount names (10-init.sql, then 20-mariadb.sql):
--- the entrypoint applies /docker-entrypoint-initdb.d in sorted order, and
--- apibdd_demo must exist before this runs.
+-- Load it after init-mysql.sql: apibdd_demo must exist before this runs.
 
 CREATE SEQUENCE IF NOT EXISTS apibdd_demo.ticket_seq;
 

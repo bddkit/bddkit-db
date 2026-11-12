@@ -8,7 +8,7 @@ A bddkit plugin that runs database steps against Postgres, MySQL and MariaDB as 
 bddkit plugin install bddkit/bddkit-db
 ```
 
-Written against plugin ABI 4, so it needs a bddkit that loads that generation.
+Written against plugin ABI 4, so it needs a bddkit that loads that generation (0.5.0 or later).
 
 ## Config
 
@@ -23,7 +23,7 @@ resources:
 default_db: main
 ```
 
-One pool per connection is opened at startup, so an unreachable database stops the run with exit 2 before any scenario. The engine comes from the DSN scheme (`postgres://`, `mysql://`); MySQL and MariaDB share one scheme and are told apart by a single `SELECT VERSION()`. Any scenario reaches any connection: `I use "reporting" db` switches the default for the rest of the scenario, and a table reference `reporting:audit.log` names one for one step. `I use "<name>" connection`, the old spelling, still works; `bddkit doctor` hints at the new one and `run` says nothing.
+One pool per connection is opened at startup, so an unreachable database stops the run with exit 2 before any scenario. The engine comes from the DSN scheme (`postgres://` or `postgresql://`, `mysql://` or `mariadb://`); MySQL and MariaDB share one driver and are told apart by a single `SELECT VERSION()`. A connection also takes `options` (`polling.timeout_secs` / `polling.interval_ms`): the polling of eventual assertions against it. Any scenario reaches any connection: `I use "reporting" db` switches the default for the rest of the scenario, and a table reference `reporting:audit.log` names one for one step. `I use "<name>" connection`, the old spelling, still works; `bddkit doctor` hints at the new one and `run` says nothing.
 
 ## Steps
 
@@ -47,12 +47,12 @@ A condition column may end in an operator: `col:` is `=`, `col!:` is `<>`, `col~
 
 Variables a step sets, readable as `<<...>>`:
 
-- `last_insert_id_<table>` for a single-column `id` key, `last_insert_<table>_<column>` per column otherwise, and for `I have "<table>" where:` a `_<index>` suffix per row, a single row included. `I have "<table>" with` and `I have:` add no suffix, so in `I have:` a later row of one table overwrites the earlier one's variables.
+- `last_insert_id_<table>` for a single-column key, whatever the column is called, `last_insert_<table>_<column>` per column otherwise, and for `I have "<table>" where:` a `_<index>` suffix per row, a single row included. `I have "<table>" with` and `I have:` add no suffix, so in `I have:` a later row of one table overwrites the earlier one's variables.
 - `updated_<table>` and `deleted_<table>`: the affected row count.
 
 Variables travel back on a passed step only, so a failed step leaves none behind.
 
-`I am in debug mode` prints each statement as `SQL:`, `PARAMETERS:` and `TIME:` lines, on a failing statement too. Under `concurrency` above 1 the time includes the wait for a free pooled connection. Under `bddkit run --events <file> --evidence` every statement is an `sql` evidence event naming the connection it ran on. A failed step's console dump never carries the SQL.
+`I am in debug mode` prints each statement as `SQL:`, `PARAMETERS:` (`ARGUMENTS:` for a procedure or function call) and `TIME:` lines, on a failing statement too. Under `concurrency` above 1 the time includes the wait for a free pooled connection. Under `bddkit run --events <file> --evidence` every statement is an `sql` evidence event naming the connection it ran on. A failed step's console dump never carries the SQL.
 
 ## Engines
 

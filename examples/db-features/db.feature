@@ -2,7 +2,7 @@
 Feature: working with the database
 
   Demonstrates every DB step against the apibdd_demo schema (see examples/db/init.sql,
-  spun up via docker-compose or manually with psql).
+  loaded with psql as examples/README.md shows).
 
   Scenario: insert one row, read it back, extract a value
     Given I am in debug mode
