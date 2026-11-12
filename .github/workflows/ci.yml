@@ -10,9 +10,9 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
-  # The host the plugin is tested against: a candidate. Raise it when a newer
-  # candidate is out.
-  HOST_TAG: v0.5.0-rc.3
+  # The host the plugin is tested against: a released bddkit. Raise it when a
+  # newer release is out.
+  HOST_TAG: v0.5.0
 
 jobs:
   test:
@@ -135,7 +135,7 @@ jobs:
           exit "$code"
 
   # Release gate (epic bddkit/bddkit#183, phase 6): the core's DB example suites
-  # exactly as they were at the `pre-split` tag pass on the candidate host with
+  # exactly as they were at the `pre-split` tag pass on the released host with
   # this plugin installed. Nothing of the suites is edited, so the `api` resource
   # they still declare needs the api plugin: it is installed the way a user
   # would, from its pre-release. Raise API_TAG with the API candidate.
