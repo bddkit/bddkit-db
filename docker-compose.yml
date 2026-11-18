@@ -1,0 +1,60 @@
+services:
+  # The three databases the examples and tests use; same images, credentials
+  # and ports as the `services:` of .github/workflows/ci.yml. The example
+  # schemas (examples/db/*.sql) are loaded at first start through
+  # docker-entrypoint-initdb.d, one file per engine: the entrypoints run every
+  # *.sql of that directory in name order, so the directory is never mounted
+  # whole (Postgres would run the MySQL scripts, MySQL the MariaDB one).
+  # The scripts run only on an empty data directory: after editing one, run
+  # `docker compose down -v` before `up -d`.
+  #
+  # The healthchecks probe over TCP, unlike CI's (which has no init scripts to
+  # wait for): while the entrypoint loads the scripts it runs a temporary
+  # server on the unix socket only, so a socket probe would report healthy
+  # too early. `docker compose up -d --wait` returns when all three are ready.
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./examples/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: apibdd_it
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./examples/db/init-mysql.sql:/docker-entrypoint-initdb.d/01-init-mysql.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # init-mariadb.sql needs the database init-mysql.sql creates, hence the
+  # numeric prefixes.
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: apibdd_it
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./examples/db/init-mysql.sql:/docker-entrypoint-initdb.d/01-init-mysql.sql:ro
+      - ./examples/db/init-mariadb.sql:/docker-entrypoint-initdb.d/02-init-mariadb.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
