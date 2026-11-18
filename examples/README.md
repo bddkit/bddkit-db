@@ -2,6 +2,14 @@
 
 Three suites, one per engine. Run them from the repository root with a bddkit that loads this plugin (see the README), against databases loaded with the scripts in `examples/db/`. The configs have no `resources.api`: a suite that declares one needs the API plugin too.
 
+## Databases
+
+```bash
+docker compose up -d --wait
+```
+
+This starts Postgres (port 5433), MySQL (3307) and MariaDB (3308), the same services and credentials as CI, and loads the scripts in `examples/db/` at first start, so the `psql` and `mysql` commands below are optional. They stay for databases you run yourself; every script is idempotent. The scripts run only when a database starts empty: after editing one, `docker compose down -v` and `up -d --wait` again.
+
 ## Postgres — `examples/db.yaml`
 
 ```bash
