@@ -12,7 +12,7 @@ env:
   CARGO_TERM_COLOR: always
   # The host the plugin is tested against: a released bddkit. Raise it when a
   # newer release is out.
-  HOST_TAG: v0.5.0
+  HOST_TAG: v0.6.0
 
 jobs:
   test:
@@ -220,8 +220,15 @@ jobs:
           mysql --protocol=TCP -h127.0.0.1 -P3307 -uroot -proot < examples/db/init-mysql.sql
           mysql --protocol=TCP -h127.0.0.1 -P3308 -uroot -proot < examples/db/init-mysql.sql
           mysql --protocol=TCP -h127.0.0.1 -P3308 -uroot -proot < examples/db/init-mariadb.sql
+          # The pinned configs name their paths from the checkout root, which a 0.6.0
+          # host reads from the config's folder; BDDKIT_PATHS replaces their list.
           code=0
           for suite in db db-mysql db-mariadb; do
-            "$bddkit" run --config "examples/$suite.yaml" --bddkit-dir "$lock" || code=1
+            case "$suite" in
+              db) paths=examples/db-features ;;
+              db-mysql) paths=examples/db-features-mysql ;;
+              db-mariadb) paths=examples/db-features-mysql,examples/db-features-mariadb ;;
+            esac
+            BDDKIT_PATHS="$paths" "$bddkit" run --config "examples/$suite.yaml" --bddkit-dir "$lock" || code=1
           done
           exit "$code"

@@ -81,14 +81,14 @@ Known ceilings: `I extract` cannot tell SQL NULL from an empty string and reads 
 
 ## Examples
 
-`examples/` holds three suites, one per engine, run from the repository root against databases loaded with the scripts in `examples/db/`. `examples/README.md` says how.
+`examples/` holds three suites, one per engine, run from the repository root with bddkit 0.6.0 or later against databases loaded with the scripts in `examples/db/`. `examples/README.md` says how.
 
 ## Develop
 
-The tests need a `bddkit` host of `v0.5.0` or later and the three databases.
+The tests need a `bddkit` host of `v0.6.0` or later and the three databases.
 
 ```sh
-cargo install --git https://github.com/bddkit/bddkit --tag v0.5.0 --locked --root ~/bddkit-host bddkit
+cargo install --git https://github.com/bddkit/bddkit --tag v0.6.0 --locked --root ~/bddkit-host bddkit
 BDDKIT_BIN=~/bddkit-host/bin/bddkit cargo test -- --test-threads=1
 ```
 

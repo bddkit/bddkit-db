@@ -8,7 +8,7 @@
 # Apart from the port, the connections below are identical to
 # examples/db-mysql.yaml: still no `search_path` (a schema is a database here
 # too), still a second DSN for the second database.
-paths: [examples/db-features-mysql, examples/db-features-mariadb]
+paths: [db-features-mysql, db-features-mariadb]
 
 default_db: default
 

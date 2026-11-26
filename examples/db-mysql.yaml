@@ -1,4 +1,4 @@
-paths: [examples/db-features-mysql]
+paths: [db-features-mysql]
 
 default_db: default
 
