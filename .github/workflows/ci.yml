@@ -138,12 +138,12 @@ jobs:
   # exactly as they were at the `pre-split` tag pass on the released host with
   # this plugin installed. Nothing of the suites is edited, so the `api` resource
   # they still declare needs the api plugin: it is installed the way a user
-  # would, from its pre-release. Raise API_TAG with the API candidate.
+  # would, from its release. Raise API_TAG when a newer one is out.
   pre-split-gate:
     name: pre-split DB suites
     runs-on: ubuntu-latest
     env:
-      API_TAG: 0.1.0-rc.1
+      API_TAG: 0.1.0
 
     services:
       postgres:
