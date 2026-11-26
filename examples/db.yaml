@@ -1,4 +1,4 @@
-paths: [examples/db-features]
+paths: [db-features]
 
 default_db: default
 

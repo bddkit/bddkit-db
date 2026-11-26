@@ -1,6 +1,6 @@
 # Running the examples
 
-Three suites, one per engine. Run them from the repository root with a bddkit that loads this plugin (see the README), against databases loaded with the scripts in `examples/db/`. The configs have no `resources.api`: a suite that declares one needs the API plugin too.
+Three suites, one per engine. Run them from the repository root with a bddkit (0.6.0 or later) that loads this plugin (see the README), against databases loaded with the scripts in `examples/db/`. The configs have no `resources.api`: a suite that declares one needs the API plugin too.
 
 ## Databases
 
